@@ -6,6 +6,9 @@ module.exports = {
   entry: "./src/index.js",
   output: {
     path: path.resolve(__dirname, 'dist'),
+    assetModuleFilename: 'img/[path][name][ext][query]',
+    publicPath: '/',
+    clean: true,
   },
   module: {
     rules: [
@@ -20,7 +23,11 @@ module.exports = {
         test: /\.js$/,
         exclude: /node-modules/,
         loader: "babel-loader"
-      }
+      },
+      {
+        test: /\.png$/i,
+        type: 'asset/resource',
+      },
     ]
   },
   plugins: [
