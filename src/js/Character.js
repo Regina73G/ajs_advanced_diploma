@@ -22,11 +22,6 @@ export default class Character {
     if (typeof level !== 'number' || level < 1 || level > 4) {
       throw new Error("Level must be a number between 1 and 4");
     }
-    // строка с одним из допустимых значений
-    const validTypes = ["swordsman", "bowman", "magician", "daemon", "undead", "vampire"];
-    if(!validTypes.includes(type)) {
-      throw new Error("Invalid character type");    
-    }
 
     this.level = level;
     this.attack = 0;
