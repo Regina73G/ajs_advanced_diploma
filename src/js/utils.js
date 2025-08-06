@@ -35,7 +35,7 @@ export function calcTileType(index, boardSize) {
   const topRight = boardSize - 1;
   const bottomRight = boardLength - 1;
   const right = [];
-  for (let i = boardSize * 2 - 1; i < boardLength - boardSize + boardSize -1; i += boardSize) { // Уточненный цикл
+  for (let i = boardSize * 2 - 1; i < boardLength - boardSize + boardSize -1; i += boardSize) {
     right.push(i);
   }
   // top

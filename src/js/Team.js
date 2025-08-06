@@ -12,7 +12,6 @@
  * ```
  * */
 export default class Team {
-  // Класс Team хранит команду игрока или соперника. 
   constructor(characters) {
     this.characters = characters;
   }
