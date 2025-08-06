@@ -1,3 +1,4 @@
+import Team from "./Team";
 /**
  * Формирует экземпляр персонажа из массива allowedTypes со
  * случайным уровнем от 1 до maxLevel
@@ -9,7 +10,10 @@
  *
  */
 export function* characterGenerator(allowedTypes, maxLevel) {
-  // TODO: write logic here
+  // const allowedTypes = [Bowman, Swordsman, Magician];
+  const CharacterType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
+  const level = Math.floor(Math.random() * (maxLevel + 1));
+  yield new CharacterType(level);
 }
 
 /**
@@ -20,5 +24,12 @@ export function* characterGenerator(allowedTypes, maxLevel) {
  * @returns экземпляр Team, хранящий экземпляры персонажей. Количество персонажей в команде - characterCount
  * */
 export function generateTeam(allowedTypes, maxLevel, characterCount) {
-  // TODO: write logic here
+  // const heroes = characterGenerator([Bowman, Swordsman, Magician], 2, 4);
+  // const villains = characterGenerator([Daemon , Undead , Vampire], 2, 4);
+  const team = [];
+  const newCharacter = characterGenerator(allowedTypes, maxLevel);
+  for (let i = 0; i < characterCount; i++) {
+    team.push(newCharacter.next().value);
+  }
+  return new Team(team);
 }

@@ -12,5 +12,8 @@
  * ```
  * */
 export default class Team {
-  // TODO: write your logic here
+  // Класс Team хранит команду игрока или соперника. 
+  constructor(characters) {
+    this.characters = characters;
+  }
 }
