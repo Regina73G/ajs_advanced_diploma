@@ -11,9 +11,11 @@ import Team from "./Team";
  */
 export function* characterGenerator(allowedTypes, maxLevel) {
   // const allowedTypes = [Bowman, Swordsman, Magician];
-  const CharacterType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
-  const level = Math.floor(Math.random() * (maxLevel + 1));
-  yield new CharacterType(level);
+  while (true) {
+    const CharacterType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
+    const level = Math.floor((Math.random() * maxLevel) + 1);
+    yield new CharacterType(level);
+  }
 }
 
 /**
