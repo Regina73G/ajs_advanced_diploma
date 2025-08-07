@@ -1,6 +1,5 @@
 import themes from "./themes";
-import PositionedCharacter from "./PositionedCharacter";
-import { generateTeam } from "./generators";
+import { generateTeam, generatePositionsForTeam } from "./generators";
 import Bowman from "./characters/Bowman";
 import Swordsman from "./characters/Swordsman";
 import Magician from "./characters/Magician";
@@ -16,49 +15,23 @@ export default class GameController {
     this.characterCount = 2;
     this.allowedTypesOfThePlayer = [Bowman, Swordsman, Magician];
     this.allowedTypesOfTheEnemy = [Daemon, Undead, Vampire];
+    this.positionedCharacter = [];
   }
 
   init() {
     this.gamePlay.drawUi(themes.prairie);
     this.playerTeam = generateTeam(this.allowedTypesOfThePlayer, this.maxLevel, this.characterCount);
     this.enemyTeam = generateTeam(this.allowedTypesOfTheEnemy, this.maxLevel, this.characterCount);
-
     const boardSize = this.gamePlay.boardSize;
 
-    const playerPositions = this.generatePositionsForTeam(this.playerTeam, [0, 1], boardSize);
-    const enemyPositions = this.generatePositionsForTeam(this.enemyTeam, [boardSize - 2, boardSize - 1], boardSize);
-    this.gamePlay.redrawPositions([...playerPositions, ...enemyPositions]);
-  }
+    const playerPositions = generatePositionsForTeam(this.playerTeam, [0, 1], boardSize);
+    const enemyPositions = generatePositionsForTeam(this.enemyTeam, [boardSize - 2, boardSize - 1], boardSize);
+    this.positionedCharacters = [...playerPositions, ...enemyPositions];
+    this.gamePlay.redrawPositions(this.positionedCharacters);
 
-  generatePositionsForTeam(team, columns, boardSize) {
-    const positions = [];
-    const usedPositions = new Set();
-    const maxAttempts = 100; // чтоб не было бесконечного цикла
-
-    for (const character of team.characters) {
-      let position = null;
-      let attempts = 0;
-
-      while (position === null && attempts < maxAttempts) {
-        attempts++;
-        const column = columns[Math.floor(Math.random() * columns.length)];
-        const row = Math.floor(Math.random() * boardSize);
-        const candidatePosition = row * boardSize + column;
-
-        if (!usedPositions.has(candidatePosition)) {
-          position = candidatePosition;
-          usedPositions.add(candidatePosition);
-        }
-      }
-
-      if (position !== null) {
-        positions.push(new PositionedCharacter(character, position));
-      } else {
-        console.warn(`Не удалось найти уникальную позицию для персонажа ${character.type} после ${maxAttempts} попыток.`);
-      }
-    }
-
-    return positions;
+    this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
+    this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
+    this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
   }
 
   onCellClick(index) {
@@ -66,10 +39,14 @@ export default class GameController {
   }
 
   onCellEnter(index) {
-    // TODO: react to mouse enter
+    this.positionedCharacters.forEach(item => {
+      if (item.position === index) {
+        this.gamePlay.showCellTooltip(this.gamePlay.showCharacterInfo(item.character), index);
+      }
+    })
   }
 
   onCellLeave(index) {
-    // TODO: react to mouse leave
+    this.gamePlay.hideCellTooltip(index);
   }
 }

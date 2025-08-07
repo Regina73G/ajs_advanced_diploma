@@ -1,4 +1,5 @@
 import Team from "./Team";
+import PositionedCharacter from "./PositionedCharacter";
 /**
  * Формирует экземпляр персонажа из массива allowedTypes со
  * случайным уровнем от 1 до maxLevel
@@ -35,3 +36,34 @@ export function generateTeam(allowedTypes, maxLevel, characterCount) {
   }
   return new Team(team);
 }
+
+export function generatePositionsForTeam(team, columns, boardSize) {
+    const positions = [];
+    const usedPositions = new Set();
+    const maxAttempts = 100; // чтоб не было бесконечного цикла
+
+    for (const character of team.characters) {
+      let position = null;
+      let attempts = 0;
+
+      while (position === null && attempts < maxAttempts) {
+        attempts++;
+        const column = columns[Math.floor(Math.random() * columns.length)];
+        const row = Math.floor(Math.random() * boardSize);
+        const candidatePosition = row * boardSize + column;
+
+        if (!usedPositions.has(candidatePosition)) {
+          position = candidatePosition;
+          usedPositions.add(candidatePosition);
+        }
+      }
+
+      if (position !== null) {
+        positions.push(new PositionedCharacter(character, position));
+      } else {
+        console.warn(`Не удалось найти уникальную позицию для персонажа ${character.type} после ${maxAttempts} попыток.`);
+      }
+    }
+
+    return positions;
+  }
