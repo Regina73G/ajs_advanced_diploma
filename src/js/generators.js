@@ -61,7 +61,7 @@ export function generatePositionsForTeam(team, columns, boardSize) {
       if (position !== null) {
         positions.push(new PositionedCharacter(character, position));
       } else {
-        console.warn(`Не удалось найти уникальную позицию для персонажа ${character.type} после ${maxAttempts} попыток.`);
+        console.warn("Couldn't find a unique position for the character");
       }
     }
 

@@ -6,10 +6,18 @@ import Daemon from "../characters/Daemon";
 import Undead from "../characters/Undead";
 import Vampire from "../characters/Vampire";
 
-test("testing the Character class for using 'new Character'", () => {
+test("testing the Character class for using new.target", () => {
   expect(() => {
     new Character(2);
   }).toThrow("You cannot create instances of the Character base class directly");
+});
+
+test("testing child classes for use with new.target", () => {
+  const expectedResult = { 
+    type: 'magician', level: 2, attack: 10, defence: 40, health: 50
+  }
+
+  expect(new Magician(2)).toEqual(expectedResult);
 });
 
 test("testing for creating a character with an invalid level", () => {
@@ -30,7 +38,7 @@ const characters = [
 test.each(characters)("testing the creation of %s with level %i", 
   ({ type, level, Class, expectedAttack, expectedDefence }) => {
   const character = new Class(level);
-  const result = [character.type, character.level, character.attack, character.defence]
-  const expectedResult = [type, level, expectedAttack, expectedDefence]
+  const result = [character.type, character.level, character.attack, character.defence];
+  const expectedResult = [type, level, expectedAttack, expectedDefence];
   expect(result).toEqual(expectedResult);
 });
