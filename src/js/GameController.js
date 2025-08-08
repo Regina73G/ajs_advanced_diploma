@@ -6,6 +6,7 @@ import Magician from "./characters/Magician";
 import Daemon from "./characters/Daemon";
 import Undead from "./characters/Undead";
 import Vampire from "./characters/Vampire";
+import GamePlay from "./GamePlay";
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -16,6 +17,7 @@ export default class GameController {
     this.allowedTypesOfThePlayer = [Bowman, Swordsman, Magician];
     this.allowedTypesOfTheEnemy = [Daemon, Undead, Vampire];
     this.positionedCharacter = [];
+    this.selectedCell = null;
   }
 
   init() {
@@ -35,8 +37,25 @@ export default class GameController {
   }
 
   onCellClick(index) {
-    // TODO: react to click
+  let characterFound = false; 
+  if (this.selectedCell !== null) {
+    this.gamePlay.deselectCell(this.selectedCell);
+    this.selectedCell = null;
   }
+
+  this.positionedCharacters.forEach(item => {
+    if (item.position === index && (item.character.type === "bowman" || item.character.type === "swordsman" || item.character.type === "magician")) {
+      this.gamePlay.selectCell(index);
+      characterFound = true;
+      this.selectedCell = index;
+      return;
+    }
+  });
+
+  if (!characterFound) {
+    GamePlay.showError("This is not a player's character");
+  }
+}
 
   onCellEnter(index) {
     this.positionedCharacters.forEach(item => {
