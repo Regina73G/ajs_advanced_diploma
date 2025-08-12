@@ -81,3 +81,12 @@ export function calcHealthLevel(health) {
 
   return 'high';
 }
+
+export function calcTileDistance(index1, index2, boardSize) {
+  const row1 = Math.floor(index1 / boardSize);
+  const col1 = index1 % boardSize;
+  const row2 = Math.floor(index2 / boardSize);
+  const col2 = index2 % boardSize;
+
+  return Math.max(Math.abs(row2 - row1), Math.abs(col2 - col1));
+}

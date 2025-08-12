@@ -7,6 +7,8 @@ import Daemon from "./characters/Daemon";
 import Undead from "./characters/Undead";
 import Vampire from "./characters/Vampire";
 import GamePlay from "./GamePlay";
+import cursors from "./cursors";
+import { isCellMovable, isCellAttackable, moveCharacter, attackCharacter, showPossibleMoves } from "./gamePlayMechanics"
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -18,6 +20,7 @@ export default class GameController {
     this.allowedTypesOfTheEnemy = [Daemon, Undead, Vampire];
     this.positionedCharacter = [];
     this.selectedCell = null;
+    this.availableMoves = [];
   }
 
   init() {
@@ -36,36 +39,117 @@ export default class GameController {
     this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
   }
 
+  // получает позицию персонажа
+  getPositionedCharacter(index) {
+    return this.positionedCharacters.find(item => item.position === index) || null; // {character{...}, position:...}
+  }
+
+  // проверяет, является ли персонаж игрока
+  isPlayerCharacter(character) {
+    return this.allowedTypesOfThePlayer.some(type => character instanceof type);
+  }
+
   onCellClick(index) {
+  // снимает выделение с предыдущей ячейки с персонажем
   let characterFound = false; 
   if (this.selectedCell !== null) {
     this.gamePlay.deselectCell(this.selectedCell);
-    this.selectedCell = null;
+    // this.selectedCell = null; // ??????
+    this.gamePlay.setCursor(cursors.auto); // ??????
+    this.availableMoves = [];
   }
 
-  this.positionedCharacters.forEach(item => {
-    if (item.position === index && (item.character.type === "bowman" || item.character.type === "swordsman" || item.character.type === "magician")) {
-      this.gamePlay.selectCell(index);
-      characterFound = true;
-      this.selectedCell = index;
-      return;
-    }
-  });
+  // Если кликнули на ячейку с персонажем игрока
+  const positionedCharacter = this.getPositionedCharacter(index);
+  if (positionedCharacter && this.isPlayerCharacter(positionedCharacter.character)) {
+    this.gamePlay.selectCell(index); // выделяет игрока
+    characterFound = true;
+    this.selectedCell = index; // запоминает индекс выбранного игрока
+    this.gamePlay.setCursor(cursors.pointer);
+    this.availableMoves = showPossibleMoves(index, this);
+    return;
+  };
 
+  // Если есть выбранный персонаж, и кликнули на другую ячейку
+  if (this.selectedCell !== null) {
+    const selectedPositionedCharacter = this.getPositionedCharacter(this.selectedCell);
+
+    const selectedCharacter = selectedPositionedCharacter.character;
+    const boardSize = this.gamePlay.boardSize;
+
+    // Если можно переместиться
+    if (isCellMovable(this.selectedCell, index, selectedCharacter.type, boardSize)) {
+      moveCharacter(selectedPositionedCharacter, index, this);
+      this.gamePlay.setCursor(cursors.pointer);
+    }
+    // Если можно атаковать
+    else if (isCellAttackable(this.selectedCell, index, selectedCharacter.type, boardSize)) {
+      attackCharacter(selectedPositionedCharacter, index, this);
+      this.gamePlay.setCursor(cursors.crosshair);
+    }
+    // Недопустимое действие
+    else {
+      this.gamePlay.setCursor(cursors.notallowed);
+      GamePlay.showError("Unacceptable action");
+    }
+
+    this.selectedCell = null;
+    this.gamePlay.setCursor(cursors.auto);
+    return;
+  }
+
+  // Кликнули на пустую ячейку или ячейку с врагом без выбранного персонажа
   if (!characterFound) {
     GamePlay.showError("This is not a player's character");
   }
 }
 
   onCellEnter(index) {
-    this.positionedCharacters.forEach(item => {
-      if (item.position === index) {
-        this.gamePlay.showCellTooltip(this.gamePlay.showCharacterInfo(item.character), index);
+    // Отображение подсказки о персонаже
+    const positionedCharacter = this.getPositionedCharacter(index);
+    if (positionedCharacter) {
+      this.gamePlay.showCellTooltip(this.gamePlay.showCharacterInfo(positionedCharacter.character), index);
+    }
+
+    // Проверяем, есть ли выбранный персонаж и мы не на нем
+    if (this.selectedCell !== null && this.selectedCell !== index) {
+      const selectedPositionedCharacter = this.getPositionedCharacter(this.selectedCell);
+      if (!selectedPositionedCharacter) {
+        return; // Если выбранного персонажа нет, выходим
       }
-    })
+      const selectedCharacter = selectedPositionedCharacter.character;
+      const boardSize = this.gamePlay.boardSize;
+
+      if (this.availableMoves.includes(index)) { // Если есть в доступных ходах
+        if (isCellMovable(this.selectedCell, index, selectedCharacter.type, boardSize) && !this.getPositionedCharacter(index)) { // Если можно переместиться
+          this.gamePlay.selectCell(index, 'green');
+          this.gamePlay.setCursor(cursors.pointer);
+        } else if (isCellAttackable(this.selectedCell, index, selectedCharacter.type, boardSize)) { // Если можно атаковать
+          this.gamePlay.selectCell(index, 'red');
+          this.gamePlay.setCursor(cursors.crosshair);
+        } else { // можно передвигаться, но нельзя атаковать, или наоборот.
+          this.gamePlay.setCursor(cursors.notallowed);
+        }
+      } else {
+        this.gamePlay.setCursor(cursors.notallowed) // Нельзя ни переместиться, ни атаковать
+      }
+    } else {
+      this.gamePlay.setCursor(cursors.auto); // нет выбранного персонажа
+    }
   }
 
   onCellLeave(index) {
+    if (this.selectedCell !== index) {
+      this.gamePlay.deselectCell(index);
+    }
+
+    // Устанавливаем курсор в состояние по умолчанию, если мы не на выбранной ячейке
+    if (this.selectedCell === null) {
+      this.gamePlay.setCursor(cursors.auto);
+    } else {
+      this.gamePlay.setCursor(cursors.pointer);
+    }
+
     this.gamePlay.hideCellTooltip(index);
   }
 }
