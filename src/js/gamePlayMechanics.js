@@ -48,10 +48,8 @@ export function getMaxAttackDistance(characterType) {
 
 export function moveCharacter(positionedCharacter, newPosition, gameController) {
   if (!positionedCharacter) {
-    return
+    return;
   }
-
-  // Реализовать невозможность перемещение на ячейку с другими персонажами ??????
 
   // Удаляем персонажа со старой позиции
   gameController.positionedCharacters = gameController.positionedCharacters.filter(item => item.position !== positionedCharacter.position);
@@ -61,14 +59,26 @@ export function moveCharacter(positionedCharacter, newPosition, gameController) 
   gameController.positionedCharacters.push(positionedCharacter);
   // Обновляем selectedCell
   gameController.selectedCell = newPosition;
-  // Обновляем игровое поле
+  // Обновляем игровое поле и переключаем ход
   gameController.gamePlay.redrawPositions(gameController.positionedCharacters);
-  // Переключаем ход
   gameController.gameState.changeTurn();
 }
 
-export function attackCharacter(attacker, targetIndex, gameController) {
-  // Реализовать логику атаки
+export async function attackCharacter(attacker, targetIndex, gameController) {
+  const target = gameController.getPositionedCharacter(targetIndex);
+
+  const targetCharacter = target.character;
+  const damage = Math.max(attacker.attack - targetCharacter.defence, attacker.attack * 0.1);
+  targetCharacter.health -= damage;
+
+  await gameController.gamePlay.showDamage(targetIndex, damage);
+  // Удаляем убитого персонажа
+  if (target.character.health <= 0) {
+    gameController.positionedCharacters = gameController.positionedCharacters.filter(item => item.position !== targetIndex);
+  }
+  // Обновляем игровое поле и переключаем ход
+  gameController.gamePlay.redrawPositions(gameController.positionedCharacters);
+  gameController.gameState.changeTurn();
 }
 
 export function showPossibleMoves(index, gameController) {
