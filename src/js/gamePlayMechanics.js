@@ -47,7 +47,24 @@ export function getMaxAttackDistance(characterType) {
 }
 
 export function moveCharacter(positionedCharacter, newPosition, gameController) {
-  //Реализовать логику перемещения персонажа
+  if (!positionedCharacter) {
+    return
+  }
+
+  // Реализовать невозможность перемещение на ячейку с другими персонажами ??????
+
+  // Удаляем персонажа со старой позиции
+  gameController.positionedCharacters = gameController.positionedCharacters.filter(item => item.position !== positionedCharacter.position);
+  // Меняем позицию персонажа
+  positionedCharacter.position = newPosition;
+  // Добавляем персонажа на новую позицию
+  gameController.positionedCharacters.push(positionedCharacter);
+  // Обновляем selectedCell
+  gameController.selectedCell = newPosition;
+  // Обновляем игровое поле
+  gameController.gamePlay.redrawPositions(gameController.positionedCharacters);
+  // Переключаем ход
+  gameController.gameState.changeTurn();
 }
 
 export function attackCharacter(attacker, targetIndex, gameController) {

@@ -9,6 +9,7 @@ import Vampire from "./characters/Vampire";
 import GamePlay from "./GamePlay";
 import cursors from "./cursors";
 import { isCellMovable, isCellAttackable, moveCharacter, attackCharacter, showPossibleMoves } from "./gamePlayMechanics"
+import GameState from "./GameState";
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -21,6 +22,7 @@ export default class GameController {
     this.positionedCharacter = [];
     this.selectedCell = null;
     this.availableMoves = [];
+    this.gameState = new GameState();
   }
 
   init() {
@@ -80,16 +82,16 @@ export default class GameController {
     // Если можно переместиться
     if (isCellMovable(this.selectedCell, index, selectedCharacter.type, boardSize)) {
       moveCharacter(selectedPositionedCharacter, index, this);
-      this.gamePlay.setCursor(cursors.pointer);
+      // this.gamePlay.setCursor(cursors.pointer);
     }
     // Если можно атаковать
     else if (isCellAttackable(this.selectedCell, index, selectedCharacter.type, boardSize)) {
       attackCharacter(selectedPositionedCharacter, index, this);
-      this.gamePlay.setCursor(cursors.crosshair);
+      // this.gamePlay.setCursor(cursors.crosshair);
     }
     // Недопустимое действие
     else {
-      this.gamePlay.setCursor(cursors.notallowed);
+      // this.gamePlay.setCursor(cursors.notallowed);
       GamePlay.showError("Unacceptable action");
     }
 
@@ -121,7 +123,9 @@ export default class GameController {
       const boardSize = this.gamePlay.boardSize;
 
       if (this.availableMoves.includes(index)) { // Если есть в доступных ходах
-        if (isCellMovable(this.selectedCell, index, selectedCharacter.type, boardSize) && !this.getPositionedCharacter(index)) { // Если можно переместиться
+        if (positionedCharacter && this.isPlayerCharacter(positionedCharacter.character)) { // Если цель курсора - персонаж игрока
+          this.gamePlay.setCursor(cursors.pointer);
+        } else if (isCellMovable(this.selectedCell, index, selectedCharacter.type, boardSize) && !this.getPositionedCharacter(index)) { // Если можно переместиться
           this.gamePlay.selectCell(index, 'green');
           this.gamePlay.setCursor(cursors.pointer);
         } else if (isCellAttackable(this.selectedCell, index, selectedCharacter.type, boardSize)) { // Если можно атаковать
