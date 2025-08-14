@@ -1,5 +1,13 @@
 import { calcTileDistance  } from "./utils";
 
+/**
+ * Проверяет, может ли персонаж переместиться из одной ячейки в другую
+ * @param {number} fromIndex Индекс ячейки, из которой персонаж начинает движение
+ * @param {number} toIndex Индекс ячейки, в которую персонаж пытается переместиться
+ * @param {string} characterType Тип персонажа
+ * @param {number} boardSize Размер игрового поля
+ * Возвращаем true, если расстояние между ячейками не превышает максимальную дальность хода
+ */
 export function isCellMovable(fromIndex, toIndex, characterType, boardSize) {
   const maxDistance = getMaxMoveDistance(characterType);
   const distance = calcTileDistance(fromIndex, toIndex, boardSize);
@@ -7,6 +15,7 @@ export function isCellMovable(fromIndex, toIndex, characterType, boardSize) {
   return distance <= maxDistance;
 }
 
+// Проверяет, может ли персонаж атаковать другую ячейку
 export function isCellAttackable(attackerIndex, targetIndex, characterType, boardSize) {
   const maxAttackDistance = getMaxAttackDistance(characterType);
   const distance = calcTileDistance(attackerIndex, targetIndex, boardSize);
@@ -14,6 +23,7 @@ export function isCellAttackable(attackerIndex, targetIndex, characterType, boar
   return distance <= maxAttackDistance;
 }
 
+// Определяет максимальную дальность хода для персонажей
 export function getMaxMoveDistance(characterType) {
   switch (characterType) {
     case "swordsman":
@@ -30,6 +40,7 @@ export function getMaxMoveDistance(characterType) {
   }
 }
 
+// Определяет дальность атаки для персонажей
 export function getMaxAttackDistance(characterType) {
   switch (characterType) {
     case "swordsman":
@@ -46,6 +57,12 @@ export function getMaxAttackDistance(characterType) {
   }
 }
 
+/**
+ * Функция для перемещения
+ * @param {object} positionedCharacter Объект с персонажем и его позицией
+ * @param {number} newPosition Индекс ячейки, на которую нужно переместить персонажа
+ * @param {object} gameController Объект, управляющий игровым процессом (GameController)
+ */
 export function moveCharacter(positionedCharacter, newPosition, gameController) {
   if (!positionedCharacter) {
     return;
@@ -64,6 +81,7 @@ export function moveCharacter(positionedCharacter, newPosition, gameController) 
   gameController.gameState.changeTurn();
 }
 
+// Функция для атаки
 export async function attackCharacter(attacker, targetIndex, gameController) {
   const target = gameController.getPositionedCharacter(targetIndex);
 
@@ -81,6 +99,7 @@ export async function attackCharacter(attacker, targetIndex, gameController) {
   gameController.gameState.changeTurn();
 }
 
+// Показывает возможные ходы для выбранного персонажа.
 export function showPossibleMoves(index, gameController) {
   const boardSize = gameController.gamePlay.boardSize;
   const positionedCharacter = gameController.getPositionedCharacter(index);
@@ -98,5 +117,5 @@ export function showPossibleMoves(index, gameController) {
     }
   }
 
-  return possibleMoves;
+  return possibleMoves; //Возвращает массив индексов ячеек, куда можно переместиться или атаковать
 }

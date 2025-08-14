@@ -19,9 +19,9 @@ export default class GameController {
     this.characterCount = 2;
     this.allowedTypesOfThePlayer = [Bowman, Swordsman, Magician];
     this.allowedTypesOfTheEnemy = [Daemon, Undead, Vampire];
-    this.positionedCharacter = [];
-    this.selectedCell = null;
-    this.availableMoves = [];
+    this.positionedCharacter = []; // Массив с персонажами и их позицией
+    this.selectedCell = null; // Индекс выбранной ячейки
+    this.availableMoves = []; // Доступные ходы для выбранного персонажа
     this.gameState = new GameState();
   }
 
