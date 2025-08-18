@@ -1,66 +1,108 @@
 import { isCellMovable, isCellAttackable, moveCharacter, attackCharacter, showPossibleMoves } from "./gamePlayMechanics"
+import { calcTileDistance } from "./utils";
 
-export default class AIController {
+export default class AiController {
   constructor(gameController) {
     this.gameController = gameController;
   }
 
-  makeMove() {
+  async makeMove() {
     if (!this.gameController.gameState.isPlayerTurn()) {
-      this.attack(); // Пробует атаковать
-      this.move(); // Если некого атакова, то перемещается
-      this.gameController.gameState.changeTurn(); // Смена хода
+      const attacked = await this.attack();
+      if (!attacked) {
+        await this.move();
+      }
     }
   }
 
-  attack() {
-    const targets = this.findAttackTargets();
-
-    if (targets.length > 0) {
-      const target = this.selectTarget(targets);
-      const attacker = this.selectAttacker();
-      attackCharacter( attacker.character, target.position,this.gameController);
-      return true
-    }
-
-    return false
-  }
-
-  move() {
-    // isCellMovable()
-    // moveCharacter()
-  }
-
-  // Возвращает массив целей, доступных для атаки
-  findAttackTargets() {
-    const targets = [];
-    const aiCharacters = this.gameController.positionedCharacters.filter(character => {
-      return !this.gameController.isPlayerCharacter(character.character); // Возвращает массив с персонажами AI
-    });
+  async attack() {
+    const attackOptions = [];
+    const aiCharacters = this.gameController.positionedCharacters.filter(character => !this.gameController.isPlayerCharacter(character.character));
 
     for (const attacker of aiCharacters) {
-      // Получаем массив возможных ходов (и атак) для текущего персонажа AI (attacker)
-      const possibleMoves = showPossibleMoves(attacker.position, gameController);
-      for (const move of possibleMoves) {
-        // Получаем объект персонажа, находящегося в ячейке, куда можно сделать ход/атаку (если там кто-то есть)
-        const target = gameController.getPositionedCharacter(move);
-        if (target && gameController.isPlayerCharacter(target.character)) {
-          // Если в ячейке есть враг, то проверяем, разрешен ли данный тип врага для атаки
-          if (!allowedEnemyTypes || allowedEnemyTypes.some(type => target.character.Class === type)) {
-          targets.push(target); // Если враг разрешен для атаки, добавляем его в массив
+      for (const target of this.gameController.positionedCharacters) {
+        if (this.gameController.isPlayerCharacter(target.character)) {
+          if (isCellAttackable(attacker.position, target.position, attacker.character.type, this.gameController.gamePlay.boardSize)) {
+            attackOptions.push({ attacker, target });
           }
         }
       }
     }
-    console.log(targets); // Убрать потом......
-    return targets;
+
+    if (attackOptions.length > 0) {
+      // Выбираем атаку по цели с минимальным здоровьем
+      let bestOption = attackOptions[0];
+      for (const option of attackOptions) {
+        if (option.target.character.health < bestOption.target.character.health) {
+          bestOption = option;
+        }
+      }
+
+      await attackCharacter(bestOption.attacker.character, bestOption.target.position, this.gameController);
+      console.log(`${bestOption.attacker.character.type} атаковал ${bestOption.target.character.type}`); // Убрать потом...
+      return true;
+    }
+
+    return false;
   }
 
-   // Выбирает лучшую цель для атаки
-  selectTarget(targets) {
-    
+  async move() {
+    const aiCharacters = this.gameController.positionedCharacters
+      .filter(pc => !this.gameController.isPlayerCharacter(pc.character));
+
+    const candidates = [];
+
+    for (const attacker of aiCharacters) {
+      const closestEnemy = this.findClosestEnemy(attacker.position);
+      if (!closestEnemy) continue;
+
+      // Берём только пустые клетки и не текущую позицию
+      const available = showPossibleMoves(attacker.position, this.gameController)
+        .filter(i => i !== attacker.position)
+        .filter(i => !this.gameController.getPositionedCharacter(i));
+
+      if (available.length === 0) continue;
+
+      let bestMove = available[0];
+      let minDistance = Infinity;
+
+      for (const move of available) {
+        const d = calcTileDistance(
+          move,
+          closestEnemy.position,
+          this.gameController.gamePlay.boardSize
+        );
+        if (d < minDistance) {
+          minDistance = d;
+          bestMove = move;
+        }
+      }
+
+      candidates.push({ attacker, bestMove });
+    }
+
+    if (candidates.length > 0) {
+      const pick = candidates[Math.floor(Math.random() * candidates.length)];
+      const positioned = this.gameController.getPositionedCharacter(pick.attacker.position);
+      console.log(`${positioned.character.type} был в ${pick.attacker.position}`); // Убрать потом...
+      await moveCharacter(positioned, pick.bestMove, this.gameController);
+      console.log(`${positioned.character.type} переместился в ${pick.bestMove}`); // Убрать потом...
+    }
   }
 
-  // Выбирает персонажа, которым будет делать ход
-  selectAttacker() {}
+  findClosestEnemy(fromIndex) {
+    let closestEnemy = null;
+    let minDistance = Infinity;
+
+    for (const positionedCharacter of this.gameController.positionedCharacters) {
+      if (this.gameController.isPlayerCharacter(positionedCharacter.character)) {
+        const distance = calcTileDistance(fromIndex, positionedCharacter.position, this.gameController.gamePlay.boardSize);
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestEnemy = positionedCharacter;
+        }
+      }
+    }
+    return closestEnemy;
+  }
 }

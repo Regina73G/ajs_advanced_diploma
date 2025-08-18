@@ -1,29 +1,17 @@
-import { calcTileDistance  } from "./utils";
+import { calcTileDistance } from "./utils";
 
-/**
- * Проверяет, может ли персонаж переместиться из одной ячейки в другую
- * @param {number} fromIndex Индекс ячейки, из которой персонаж начинает движение
- * @param {number} toIndex Индекс ячейки, в которую персонаж пытается переместиться
- * @param {string} characterType Тип персонажа
- * @param {number} boardSize Размер игрового поля
- * Возвращаем true, если расстояние между ячейками не превышает максимальную дальность хода
- */
 export function isCellMovable(fromIndex, toIndex, characterType, boardSize) {
   const maxDistance = getMaxMoveDistance(characterType);
   const distance = calcTileDistance(fromIndex, toIndex, boardSize);
-
   return distance <= maxDistance;
 }
 
-// Проверяет, может ли персонаж атаковать другую ячейку
 export function isCellAttackable(attackerIndex, targetIndex, characterType, boardSize) {
   const maxAttackDistance = getMaxAttackDistance(characterType);
   const distance = calcTileDistance(attackerIndex, targetIndex, boardSize);
-
   return distance <= maxAttackDistance;
 }
 
-// Определяет максимальную дальность хода для персонажей
 export function getMaxMoveDistance(characterType) {
   switch (characterType) {
     case "swordsman":
@@ -36,11 +24,10 @@ export function getMaxMoveDistance(characterType) {
     case "daemon":
       return 1;
     default:
-      throw new Error(`Unknown character type: ${characterType}`); 
+      throw new Error(`Unknown character type: ${characterType}`);
   }
 }
 
-// Определяет дальность атаки для персонажей
 export function getMaxAttackDistance(characterType) {
   switch (characterType) {
     case "swordsman":
@@ -57,65 +44,71 @@ export function getMaxAttackDistance(characterType) {
   }
 }
 
-/**
- * Функция для перемещения
- * @param {object} positionedCharacter Объект с персонажем и его позицией
- * @param {number} newPosition Индекс ячейки, на которую нужно переместить персонажа
- * @param {object} gameController Объект, управляющий игровым процессом (GameController)
- */
 export function moveCharacter(positionedCharacter, newPosition, gameController) {
-  if (!positionedCharacter) {
+  if (!positionedCharacter) return;
+
+  const target = gameController.getPositionedCharacter(newPosition);
+  if (target) {
+    console.warn("Попытка переместиться в занятую клетку!");
     return;
   }
 
-  // Удаляем персонажа со старой позиции
   gameController.positionedCharacters = gameController.positionedCharacters.filter(item => item.position !== positionedCharacter.position);
-  // Меняем позицию персонажа
   positionedCharacter.position = newPosition;
-  // Добавляем персонажа на новую позицию
   gameController.positionedCharacters.push(positionedCharacter);
-  // Обновляем selectedCell
-  gameController.selectedCell = newPosition;
-  // Обновляем игровое поле и переключаем ход
+  // Устанавливаем selectedCell только если сейчас ход игрока
+  if (gameController.gameState.isPlayerTurn()) {
+    gameController.selectedCell = newPosition;
+  }
+
   gameController.gamePlay.redrawPositions(gameController.positionedCharacters);
+  console.log(`${positionedCharacter.character.type} сделал перемещение`); // Убрать потом...
   gameController.gameState.changeTurn();
 }
 
-// Функция для атаки
 export async function attackCharacter(attacker, targetIndex, gameController) {
   const target = gameController.getPositionedCharacter(targetIndex);
+  if (!target) return;
 
   const targetCharacter = target.character;
   const damage = Math.max(attacker.attack - targetCharacter.defence, attacker.attack * 0.1);
   targetCharacter.health -= damage;
 
   await gameController.gamePlay.showDamage(targetIndex, damage);
-  // Удаляем убитого персонажа
   if (target.character.health <= 0) {
     gameController.positionedCharacters = gameController.positionedCharacters.filter(item => item.position !== targetIndex);
   }
-  // Обновляем игровое поле и переключаем ход
+
   gameController.gamePlay.redrawPositions(gameController.positionedCharacters);
   gameController.gameState.changeTurn();
 }
 
-// Показывает возможные ходы для выбранного персонажа.
+// Показывает возможные ходы для выбранного персонажа (пустые клетки) и клетки с врагами для атаки
 export function showPossibleMoves(index, gameController) {
   const boardSize = gameController.gamePlay.boardSize;
   const positionedCharacter = gameController.getPositionedCharacter(index);
+  if (!positionedCharacter) return [];
   const character = positionedCharacter.character;
   const possibleMoves = [];
 
   for (let i = 0; i < boardSize * boardSize; i++) {
-    if (isCellMovable(index, i, character.type, boardSize)) {
-      possibleMoves.push(i);
-    } else if (isCellAttackable(index, i, character.type, boardSize)) {
-      const target = gameController.getPositionedCharacter(i);
-      if (target && !gameController.isPlayerCharacter(target.character)) {
+    if (i === index) continue; // не включаем свою клетку
+    const target = gameController.getPositionedCharacter(i);
+
+    // 1) СНАЧАЛА проверяем возможность АТАКИ.
+    if (isCellAttackable(index, i, character.type, boardSize) && target) {
+      const sameSide = gameController.isPlayerCharacter(character) === gameController.isPlayerCharacter(target.character);
+      if (!sameSide) {
         possibleMoves.push(i);
+        continue;
       }
+    }
+
+    // 2) ХОД только в пустую клетку
+    if (!target && isCellMovable(index, i, character.type, boardSize)) {
+      possibleMoves.push(i);
     }
   }
 
-  return possibleMoves; //Возвращает массив индексов ячеек, куда можно переместиться или атаковать
+  return possibleMoves;
 }

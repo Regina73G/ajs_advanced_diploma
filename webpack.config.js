@@ -7,7 +7,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     assetModuleFilename: 'img/[path][name][ext][query]',
-    publicPath: '/',
+    // publicPath: '/',
     clean: true,
   },
   module: {
@@ -34,8 +34,8 @@ module.exports = {
       new HtmlWebpackPlugin({
         title: "Document",
         template: "./src/index.html",
-        favicon: path.resolve(__dirname, 'src/img/icon.ico')
+        favicon: path.resolve(__dirname, 'src/img/icon.ico'),
       }),
-      new MiniCSSExtractPlugin()
+      new MiniCSSExtractPlugin(),
     ]
 }

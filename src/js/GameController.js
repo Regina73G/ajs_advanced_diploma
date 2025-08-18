@@ -10,6 +10,7 @@ import GamePlay from "./GamePlay";
 import cursors from "./cursors";
 import { isCellMovable, isCellAttackable, moveCharacter, attackCharacter, showPossibleMoves } from "./gamePlayMechanics"
 import GameState from "./GameState";
+import AiController from "./AIController";
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -19,10 +20,21 @@ export default class GameController {
     this.characterCount = 2;
     this.allowedTypesOfThePlayer = [Bowman, Swordsman, Magician];
     this.allowedTypesOfTheEnemy = [Daemon, Undead, Vampire];
-    this.positionedCharacter = []; // Массив с персонажами и их позицией
-    this.selectedCell = null; // Индекс выбранной ячейки
-    this.availableMoves = []; // Доступные ходы для выбранного персонажа
+    this.positionedCharacter = [];
+    this.selectedCell = null;
+    this.availableMoves = [];
     this.gameState = new GameState();
+    this.aiController = new AiController(this);
+
+    // Подписываем AI на смену хода
+    this.gameState.onAfterTurn((turn) => {
+      if (turn === 'computer') {
+        setTimeout(() => {
+          this.aiController.makeMove();
+          this.gamePlay.setCursor(cursors.auto);
+        }, 500);
+      }
+    });
   }
 
   init() {
@@ -41,69 +53,62 @@ export default class GameController {
     this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
   }
 
-  // получает позицию персонажа
   getPositionedCharacter(index) {
-    return this.positionedCharacters.find(item => item.position === index) || null; // {character{...}, position:...}
+    return this.positionedCharacters.find(item => item.position === index) || null;
   }
 
-  // проверяет, является ли персонаж игрока
   isPlayerCharacter(character) {
     return this.allowedTypesOfThePlayer.some(type => character instanceof type);
   }
 
-  onCellClick(index) {
-  // снимает выделение с предыдущей ячейки с персонажем
-  if (this.selectedCell !== null) {
-    this.gamePlay.deselectCell(this.selectedCell);
-    this.gamePlay.setCursor(cursors.auto);
-    this.availableMoves = [];
-  }
-
-  // Если кликнули на ячейку с персонажем игрока
-  const positionedCharacter = this.getPositionedCharacter(index);
-  if (positionedCharacter && this.isPlayerCharacter(positionedCharacter.character)) {
-    this.gamePlay.selectCell(index); // выделяет игрока
-    this.selectedCell = index; // запоминает индекс выбранного игрока
-    this.gamePlay.setCursor(cursors.pointer);
-    this.availableMoves = showPossibleMoves(index, this);
-    return;
-  };
-
-  // Если есть выбранный персонаж, и кликнули на другую ячейку
-  if (this.selectedCell !== null) {
-    const selectedPositionedCharacter = this.getPositionedCharacter(this.selectedCell);
-    const selectedCharacter = selectedPositionedCharacter.character;
-    const boardSize = this.gamePlay.boardSize;
-
-    // Если можно атаковать
-    const target = this.getPositionedCharacter(index);
-    if (target && !this.isPlayerCharacter(target.character)) {
-      if (isCellAttackable(this.selectedCell, index, selectedCharacter.type, boardSize, this)) {
-        attackCharacter(selectedCharacter, index, this);
-        this.selectedCell = null;
-        this.gamePlay.setCursor(cursors.auto);
-        return;
-      }
+  async onCellClick(index) {
+    if (this.selectedCell !== null) {
+      this.gamePlay.deselectCell(this.selectedCell);
+      this.gamePlay.setCursor(cursors.auto);
+      this.availableMoves = [];
     }
 
-    // Если можно переместиться
-    else if (isCellMovable(this.selectedCell, index, selectedCharacter.type, boardSize)) {
-      moveCharacter(selectedPositionedCharacter, index, this);
+    const positionedCharacter = this.getPositionedCharacter(index);
+    if (positionedCharacter && this.isPlayerCharacter(positionedCharacter.character)) {
+      this.gamePlay.selectCell(index);
+      this.selectedCell = index;
+      this.gamePlay.setCursor(cursors.pointer);
+      this.availableMoves = showPossibleMoves(index, this);
+      return;
+    }
+
+    if (this.selectedCell !== null) {
+      const selectedPositionedCharacter = this.getPositionedCharacter(this.selectedCell);
+      const selectedCharacter = selectedPositionedCharacter.character;
+      const boardSize = this.gamePlay.boardSize;
+
+      const target = this.getPositionedCharacter(index);
+      if (target && !this.isPlayerCharacter(target.character)) {
+        if (isCellAttackable(this.selectedCell, index, selectedCharacter.type, boardSize, this)) {
+          await attackCharacter(selectedCharacter, index, this);
+          this.selectedCell = null;
+          this.gamePlay.setCursor(cursors.auto);
+          console.log(`player атаковал`);
+          return;
+        }
+      }
+
+      else if (isCellMovable(this.selectedCell, index, selectedCharacter.type, boardSize)) {
+        await moveCharacter(selectedPositionedCharacter, index, this);
+        this.selectedCell = null;
+        this.gamePlay.setCursor(cursors.auto);
+        console.log(`player переместился`);
+        return;
+      }
+
+      GamePlay.showError("Unacceptable action");
       this.selectedCell = null;
       this.gamePlay.setCursor(cursors.auto);
       return;
     }
 
-    // Недопустимое действие
-    GamePlay.showError("Unacceptable action");
-    this.selectedCell = null;
-    this.gamePlay.setCursor(cursors.auto);
-    return
+    GamePlay.showError("This is not a player's character");
   }
-
-  // Кликнули на пустую ячейку или ячейку с врагом без выбранного персонажа
-  GamePlay.showError("This is not a player's character");
-}
 
   onCellEnter(index) {
     // Отображение подсказки о персонаже
@@ -121,23 +126,23 @@ export default class GameController {
       const selectedCharacter = selectedPositionedCharacter.character;
       const boardSize = this.gamePlay.boardSize;
 
-      if (this.availableMoves.includes(index)) { // Если есть в доступных ходах
+      if (this.availableMoves.includes(index)) {
         if (positionedCharacter && this.isPlayerCharacter(positionedCharacter.character)) { // Если цель курсора - персонаж игрока
           this.gamePlay.setCursor(cursors.pointer);
         } else if (isCellMovable(this.selectedCell, index, selectedCharacter.type, boardSize) && !this.getPositionedCharacter(index)) { // Если можно переместиться
           this.gamePlay.selectCell(index, 'green');
           this.gamePlay.setCursor(cursors.pointer);
-        } else if (isCellAttackable(this.selectedCell, index, selectedCharacter.type, boardSize)) { // Если можно атаковать
+        } else if (positionedCharacter && !this.isPlayerCharacter(positionedCharacter.character) && isCellAttackable(this.selectedCell, index, selectedCharacter.type, boardSize)) { // Если можно атаковать
           this.gamePlay.selectCell(index, 'red');
           this.gamePlay.setCursor(cursors.crosshair);
         } else { // можно передвигаться, но нельзя атаковать, или наоборот.
-          this.gamePlay.setCursor(cursors.notallowed);
+          this.gamePlay.setCursor(cursors.notallowed); 
         }
-      } else {
-        this.gamePlay.setCursor(cursors.notallowed) // Нельзя ни переместиться, ни атаковать
+      } else { // Нельзя ни переместиться, ни атаковать
+        this.gamePlay.setCursor(cursors.notallowed);
       }
-    } else {
-      this.gamePlay.setCursor(cursors.auto); // нет выбранного персонажа
+    } else { // нет выбранного персонажа
+      this.gamePlay.setCursor(cursors.auto);
     }
   }
 
