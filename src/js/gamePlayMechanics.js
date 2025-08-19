@@ -64,6 +64,7 @@ export function moveCharacter(positionedCharacter, newPosition, gameController) 
   gameController.gamePlay.redrawPositions(gameController.positionedCharacters);
   console.log(`${positionedCharacter.character.type} сделал перемещение`); // Убрать потом...
   gameController.gameState.changeTurn();
+  gameController.checkGameStatus();
 }
 
 export async function attackCharacter(attacker, targetIndex, gameController) {
@@ -81,6 +82,7 @@ export async function attackCharacter(attacker, targetIndex, gameController) {
 
   gameController.gamePlay.redrawPositions(gameController.positionedCharacters);
   gameController.gameState.changeTurn();
+  gameController.checkGameStatus();
 }
 
 // Показывает возможные ходы для выбранного персонажа (пустые клетки) и клетки с врагами для атаки

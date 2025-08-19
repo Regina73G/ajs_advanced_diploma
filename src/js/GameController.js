@@ -1,5 +1,5 @@
 import themes from "./themes";
-import { generateTeam, generatePositionsForTeam } from "./generators";
+import { generateTeam, generatePositionsForTeam, characterGenerator } from "./generators";
 import Bowman from "./characters/Bowman";
 import Swordsman from "./characters/Swordsman";
 import Magician from "./characters/Magician";
@@ -16,7 +16,7 @@ export default class GameController {
   constructor(gamePlay, stateService) {
     this.gamePlay = gamePlay;
     this.stateService = stateService;
-    this.maxLevel = 2;
+    this.maxLevel = 1;
     this.characterCount = 2;
     this.allowedTypesOfThePlayer = [Bowman, Swordsman, Magician];
     this.allowedTypesOfTheEnemy = [Daemon, Undead, Vampire];
@@ -25,6 +25,7 @@ export default class GameController {
     this.availableMoves = [];
     this.gameState = new GameState();
     this.aiController = new AiController(this);
+    this.gameLevel = 0;
 
     // Подписываем AI на смену хода
     this.gameState.onAfterTurn((turn) => {
@@ -59,6 +60,54 @@ export default class GameController {
 
   isPlayerCharacter(character) {
     return this.allowedTypesOfThePlayer.some(type => character instanceof type);
+  }
+
+  checkGameStatus() {
+    const players = this.positionedCharacters.filter(char => this.isPlayerCharacter(char.character));
+    if (players.length === 0) { // Если персонажей нет, то Game Over
+      // ....
+    return;
+    }
+
+    const enemies = this.positionedCharacters.filter(char => !this.isPlayerCharacter(char.character));
+    if (enemies.length === 0) { // Если врагов нет, то следующий уровень
+      this.levelUpAll();
+      this.nextLevel();
+    }
+  }
+
+  levelUpAll() {
+    this.maxLevel += 1;
+    for (const char of this.positionedCharacters) {
+      if (this.isPlayerCharacter(char.character)) {
+        char.character.levelUp();
+      }
+    }
+  }
+
+  nextLevel() {
+    this.gameLevel += 1;
+    this.gamePlay.drawUi(themes[this.gameLevel]); // меняем тему
+    const boardSize = this.gamePlay.boardSize;
+    
+    // генерируем новых игроков, если их меньше this.characterCount
+    let alivePlayers = this.positionedCharacters.filter(char => this.isPlayerCharacter(char.character)).map(char => char.character)
+    if (alivePlayers.length < this.characterCount) {
+      const needMore = this.characterCount - alivePlayers.length;
+      const newPlayers = generateTeam(this.allowedTypesOfThePlayer, this.maxLevel, needMore);
+      alivePlayers = [...alivePlayers, ...newPlayers];
+    }
+
+    this.playerTeam = alivePlayers;
+
+    // генерируем новых врагов
+    this.enemyTeam = generateTeam(this.allowedTypesOfTheEnemy, this.maxLevel, this.characterCount);
+
+    // Размещаем песронажей
+    const playerPositions = generatePositionsForTeam(this.playerTeam, [0, 1], boardSize);
+    const enemyPositions = generatePositionsForTeam(this.enemyTeam, [boardSize - 2, boardSize - 1], boardSize);
+    this.positionedCharacters = [...playerPositions, ...enemyPositions];
+    this.gamePlay.redrawPositions(this.positionedCharacters);
   }
 
   async onCellClick(index) {
