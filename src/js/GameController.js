@@ -11,6 +11,7 @@ import cursors from "./cursors";
 import { isCellMovable, isCellAttackable, moveCharacter, attackCharacter, showPossibleMoves } from "./gamePlayMechanics"
 import GameState from "./GameState";
 import AiController from "./AIController";
+import Team from "./Team";
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -25,7 +26,7 @@ export default class GameController {
     this.availableMoves = [];
     this.gameState = new GameState();
     this.aiController = new AiController(this);
-    this.gameLevel = 0;
+    this.gameLevel = 1;
 
     // Подписываем AI на смену хода
     this.gameState.onAfterTurn((turn) => {
@@ -85,27 +86,85 @@ export default class GameController {
     }
   }
 
+  // nextLevel() {
+  //   this.gameLevel += 1;
+  //   this.gamePlay.drawUi(themes[this.gameLevel]); // меняем тему
+  //   const boardSize = this.gamePlay.boardSize;
+    
+  //   // генерируем новых игроков, если их меньше this.characterCount
+  //   let alivePlayers = this.positionedCharacters.filter(char => this.isPlayerCharacter(char.character)).map(char => char.character)
+  //   if (alivePlayers.length < this.characterCount) {
+  //     const needMore = this.characterCount - alivePlayers.length;
+  //     const newPlayers = generateTeam(this.allowedTypesOfThePlayer, this.maxLevel, needMore);
+  //     alivePlayers = [...alivePlayers, ...newPlayers];
+  //   }
+
+  //   this.playerTeam = alivePlayers;
+
+  //   // генерируем новых врагов
+  //   this.enemyTeam = generateTeam(this.allowedTypesOfTheEnemy, this.maxLevel, this.characterCount);
+
+  //   // Размещаем песронажей
+  //   const playerPositions = generatePositionsForTeam(this.playerTeam, [0, 1], boardSize);
+  //   const enemyPositions = generatePositionsForTeam(this.enemyTeam, [boardSize - 2, boardSize - 1], boardSize);
+  //   this.positionedCharacters = [...playerPositions, ...enemyPositions];
+  //   this.gamePlay.redrawPositions(this.positionedCharacters);
+  // }
   nextLevel() {
     this.gameLevel += 1;
-    this.gamePlay.drawUi(themes[this.gameLevel]); // меняем тему
+    this.gameState.changeTurn();
+
+    switch (this.gameLevel) {
+      case 2:
+        this.gamePlay.drawUi(themes.desert);
+        console.log(`---Level 2---`);
+        break;
+      case 3:
+        this.gamePlay.drawUi(themes.arctic);
+        console.log(`---Level 3---`);
+        break;
+      case 4:
+        this.gamePlay.drawUi(themes.mountain);
+        console.log(`---Level 4---`);
+        break;
+    }    
+
     const boardSize = this.gamePlay.boardSize;
-    
-    // генерируем новых игроков, если их меньше this.characterCount
-    let alivePlayers = this.positionedCharacters.filter(char => this.isPlayerCharacter(char.character)).map(char => char.character)
-    if (alivePlayers.length < this.characterCount) {
-      const needMore = this.characterCount - alivePlayers.length;
-      const newPlayers = generateTeam(this.allowedTypesOfThePlayer, this.maxLevel, needMore);
-      alivePlayers = [...alivePlayers, ...newPlayers];
+
+    // 1. Живые игроки
+    let playerChars = this.positionedCharacters
+      .filter(pc => this.isPlayerCharacter(pc.character))
+      .map(pc => pc.character);
+
+    // 2. Если все умерли → Game Over
+    if (playerChars.length === 0) {
+      this.gameOver();
+      return;
     }
 
-    this.playerTeam = alivePlayers;
+    // 3. Добираем недостающих
+    if (playerChars.length < this.characterCount) {
+      const needMore = this.characterCount - playerChars.length;
+      const newPlayersTeam = generateTeam(this.allowedTypesOfThePlayer, this.maxLevel, needMore);
+      playerChars = [...playerChars, ...newPlayersTeam.characters]; // берём characters
+    }
 
-    // генерируем новых врагов
+    // 4. Враги
     this.enemyTeam = generateTeam(this.allowedTypesOfTheEnemy, this.maxLevel, this.characterCount);
 
-    // Размещаем песронажей
-    const playerPositions = generatePositionsForTeam(this.playerTeam, [0, 1], boardSize);
-    const enemyPositions = generatePositionsForTeam(this.enemyTeam, [boardSize - 2, boardSize - 1], boardSize);
+    // 5. Позиции
+    const playerPositions = generatePositionsForTeam(
+      new Team(playerChars),   // оборачиваем в Team
+      [0, 1],
+      boardSize
+    );
+
+    const enemyPositions = generatePositionsForTeam(
+      this.enemyTeam,
+      [boardSize - 2, boardSize - 1],
+      boardSize
+    );
+
     this.positionedCharacters = [...playerPositions, ...enemyPositions];
     this.gamePlay.redrawPositions(this.positionedCharacters);
   }
