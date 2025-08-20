@@ -24,16 +24,20 @@ export default class Character {
     }
 
     this.level = 1;
-    this.attack = 0;
-    this.defence = 0;
-    this.health = 50;
     this.type = type;
 
+    this.initStats(); // вызывается метод наследника
+
+
     if(level > 1) {
-      for(let i = 1; i <= level; i++) {
+      for(let i = this.level; i < level; i++) {
         this.levelUp();
       }
     }
+  }
+
+  initStats() {
+    throw new Error("initStats должен быть реализован в подклассе");
   }
 
   levelUp() {
