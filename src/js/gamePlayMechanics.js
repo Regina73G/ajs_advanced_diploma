@@ -53,6 +53,8 @@ export function moveCharacter(positionedCharacter, newPosition, gameController) 
     return;
   }
 
+  console.log(`${positionedCharacter.character.type} был в ${positionedCharacter.position}`); // Вывод в консоль
+  
   gameController.positionedCharacters = gameController.positionedCharacters.filter(item => item.position !== positionedCharacter.position);
   positionedCharacter.position = newPosition;
   gameController.positionedCharacters.push(positionedCharacter);
@@ -62,7 +64,8 @@ export function moveCharacter(positionedCharacter, newPosition, gameController) 
   }
 
   gameController.gamePlay.redrawPositions(gameController.positionedCharacters);
-  console.log(`${positionedCharacter.character.type} сделал перемещение`); // Убрать потом...
+  console.log(`${positionedCharacter.character.type} сделал перемещение в ${newPosition}`); // Вывод в консоль
+  
   gameController.gameState.changeTurn();
   gameController.checkGameStatus();
 }
@@ -72,15 +75,21 @@ export async function attackCharacter(attacker, targetIndex, gameController) {
   if (!target) return;
 
   const targetCharacter = target.character;
-  const damage = Math.max(attacker.attack - targetCharacter.defence, attacker.attack * 0.1);
+  const damage = Math.floor(Math.max(attacker.attack - targetCharacter.defence, attacker.attack * 0.1));
   targetCharacter.health -= damage;
 
   await gameController.gamePlay.showDamage(targetIndex, damage);
+
   if (target.character.health <= 0) {
-    gameController.positionedCharacters = gameController.positionedCharacters.filter(item => item.position !== targetIndex);
+    gameController.positionedCharacters = gameController.positionedCharacters.filter(item => item !== target);
+    
+    if (gameController.isPlayerCharacter(attacker)) {
+    gameController.gameState.addScore(100); // 100 очков за убийство
+    }
   }
 
   gameController.gamePlay.redrawPositions(gameController.positionedCharacters);
+  console.log(`${attacker.type} атаковал ${target.character.type}`); // Вывод в консоль
   gameController.gameState.changeTurn();
   gameController.checkGameStatus();
 }

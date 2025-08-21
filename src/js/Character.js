@@ -43,8 +43,8 @@ export default class Character {
   levelUp() {
     if(this.level < 4) {
       this.level += 1;
-      this.attack = Math.max(this.attack, this.attack * (80 + this.health) / 100); // нужен health на конец раунда
-      this.defence = Math.max(this.defence, this.defence * (80 + this.health) / 100); // нужен health на конец раунда
+      this.attack = Math.floor(Math.max(this.attack, this.attack * (80 + this.health) / 100)); // нужен health на конец раунда
+      this.defence = Math.floor(Math.max(this.defence, this.defence * (80 + this.health) / 100)); // нужен health на конец раунда
       this.health = Math.min(100, this.health + 80);
     }
   }

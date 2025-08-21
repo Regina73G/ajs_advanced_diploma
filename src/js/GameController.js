@@ -34,7 +34,7 @@ export default class GameController {
         setTimeout(() => {
           this.aiController.makeMove();
           this.gamePlay.setCursor(cursors.auto);
-        }, 500);
+        }, 200);
       }
     });
   }
@@ -53,6 +53,7 @@ export default class GameController {
     this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
     this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
     this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
+    this.gamePlay.addNewGameListener(() => this.startNewGame());
   }
 
   getPositionedCharacter(index) {
@@ -63,14 +64,28 @@ export default class GameController {
     return this.allowedTypesOfThePlayer.some(type => character instanceof type);
   }
 
+  blockBoard() {
+    this.gamePlay.cellClickListeners = [];
+    this.gamePlay.cellEnterListeners = [];
+    this.gamePlay.cellLeaveListeners = [];
+    this.gamePlay.setCursor('auto');
+  }
+
   checkGameStatus() {
     const players = this.positionedCharacters.filter(char => this.isPlayerCharacter(char.character));
-    if (players.length === 0) { // Если персонажей нет, то Game Over
-      // ....
-    return;
+    const enemies = this.positionedCharacters.filter(char => !this.isPlayerCharacter(char.character));
+
+    if ((players.length === 0) || (this.gameLevel === 4 && enemies.length === 0)) { // Если персонажей нет, то Game Over или если ур 4 и врагов нет
+      this.gameState.setGameOver();
+      this.blockBoard();
+      GamePlay.showMessage(`Game Over! Ваш счёт: ${this.gameState.score}, рекорд: ${this.gameState.maxScore}`);
+      if(this.gameState.score === (this.characterCount * 4) * 100) {
+        GamePlay.showMessage(`You won! Ваш счёт: ${this.gameState.score}, рекорд: ${this.gameState.maxScore}`);
+        return;
+      }
+      return;
     }
 
-    const enemies = this.positionedCharacters.filter(char => !this.isPlayerCharacter(char.character));
     if (enemies.length === 0) { // Если врагов нет, то следующий уровень
       this.levelUpAll();
       this.nextLevel();
@@ -86,30 +101,6 @@ export default class GameController {
     }
   }
 
-  // nextLevel() {
-  //   this.gameLevel += 1;
-  //   this.gamePlay.drawUi(themes[this.gameLevel]); // меняем тему
-  //   const boardSize = this.gamePlay.boardSize;
-    
-  //   // генерируем новых игроков, если их меньше this.characterCount
-  //   let alivePlayers = this.positionedCharacters.filter(char => this.isPlayerCharacter(char.character)).map(char => char.character)
-  //   if (alivePlayers.length < this.characterCount) {
-  //     const needMore = this.characterCount - alivePlayers.length;
-  //     const newPlayers = generateTeam(this.allowedTypesOfThePlayer, this.maxLevel, needMore);
-  //     alivePlayers = [...alivePlayers, ...newPlayers];
-  //   }
-
-  //   this.playerTeam = alivePlayers;
-
-  //   // генерируем новых врагов
-  //   this.enemyTeam = generateTeam(this.allowedTypesOfTheEnemy, this.maxLevel, this.characterCount);
-
-  //   // Размещаем песронажей
-  //   const playerPositions = generatePositionsForTeam(this.playerTeam, [0, 1], boardSize);
-  //   const enemyPositions = generatePositionsForTeam(this.enemyTeam, [boardSize - 2, boardSize - 1], boardSize);
-  //   this.positionedCharacters = [...playerPositions, ...enemyPositions];
-  //   this.gamePlay.redrawPositions(this.positionedCharacters);
-  // }
   nextLevel() {
     this.gameLevel += 1;
     this.gameState.changeTurn();
@@ -169,6 +160,15 @@ export default class GameController {
     this.gamePlay.redrawPositions(this.positionedCharacters);
   }
 
+  startNewGame() {
+    this.gameState.score = 0;
+    this.gameState.gameOver = false;
+    this.gameLevel = 1;
+    this.maxLevel = 1;
+
+    this.init(); // перезапускаем игру
+  }
+
   async onCellClick(index) {
     if (this.selectedCell !== null) {
       this.gamePlay.deselectCell(this.selectedCell);
@@ -196,7 +196,7 @@ export default class GameController {
           await attackCharacter(selectedCharacter, index, this);
           this.selectedCell = null;
           this.gamePlay.setCursor(cursors.auto);
-          console.log(`player атаковал`);
+          // console.log(`player атаковал`);
           return;
         }
       }
@@ -205,7 +205,7 @@ export default class GameController {
         await moveCharacter(selectedPositionedCharacter, index, this);
         this.selectedCell = null;
         this.gamePlay.setCursor(cursors.auto);
-        console.log(`player переместился`);
+        // console.log(`player переместился`);
         return;
       }
 

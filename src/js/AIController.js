@@ -39,7 +39,7 @@ export default class AiController {
       }
 
       await attackCharacter(bestOption.attacker.character, bestOption.target.position, this.gameController);
-      console.log(`${bestOption.attacker.character.type} атаковал ${bestOption.target.character.type}`); // Убрать потом...
+      // console.log(`${bestOption.attacker.character.type} атаковал ${bestOption.target.character.type}`); // Убрать потом...
       return true;
     }
 
@@ -84,9 +84,9 @@ export default class AiController {
     if (candidates.length > 0) {
       const pick = candidates[Math.floor(Math.random() * candidates.length)];
       const positioned = this.gameController.getPositionedCharacter(pick.attacker.position);
-      console.log(`${positioned.character.type} был в ${pick.attacker.position}`); // Убрать потом...
+      // console.log(`${positioned.character.type} был в ${pick.attacker.position}`);
       await moveCharacter(positioned, pick.bestMove, this.gameController);
-      console.log(`${positioned.character.type} переместился в ${pick.bestMove}`); // Убрать потом...
+      // console.log(`${positioned.character.type} переместился в ${pick.bestMove}`); // Убрать потом...
     }
   }
 

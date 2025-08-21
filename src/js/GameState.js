@@ -2,6 +2,9 @@ export default class GameState {
   constructor() {
     this.turn = 'player';
     this.afterTurnCallbacks = [];
+    this.score = 0;
+    this.maxScore = 0;
+    this.gameOver = false;
   }
 
   changeTurn = () => {
@@ -27,6 +30,17 @@ export default class GameState {
         console.error('Error in afterTurn callback', e);
       }
     }
+  }
+
+  addScore(points) {
+    this.score += points;
+    if (this.score > this.maxScore) {
+      this.maxScore = this.score;
+    }
+  }
+
+  setGameOver() {
+    this.gameOver = true;
   }
 
   static from(object) {
