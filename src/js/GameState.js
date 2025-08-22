@@ -5,6 +5,9 @@ export default class GameState {
     this.score = 0;
     this.maxScore = 0;
     this.gameOver = false;
+    this.gameLevel = 1;
+    this.maxLevel = 1;
+    this.positionedCharacters = [];
   }
 
   changeTurn = () => {
@@ -43,8 +46,48 @@ export default class GameState {
     this.gameOver = true;
   }
 
+    /**
+   * Сохраняем только "чистые данные" (plain objects),
+   * чтобы они корректно сериализовались в JSON
+   */
+  serialize() {
+    return {
+      turn: this.turn,
+      score: this.score,
+      maxScore: this.maxScore,
+      gameOver: this.gameOver,
+      gameLevel: this.gameLevel,
+      maxLevel: this.maxLevel,
+      positionedCharacters: this.positionedCharacters.map(pc => ({
+        position: pc.position,
+        character: {
+          type: pc.character.type,
+          level: pc.character.level,
+          attack: pc.character.attack,
+          defence: pc.character.defence,
+          health: pc.character.health,
+        },
+      })),
+    };
+  }
+
+  /**
+   * Восстанавливаем из plain-object
+   */
   static from(object) {
-    // TODO: create object
-    return null;
+    if (!object) {
+      return new GameState();
+    }
+
+    const state = new GameState();
+    state.turn = object.turn ?? 'player';
+    state.score = object.score ?? 0;
+    state.maxScore = object.maxScore ?? 0;
+    state.gameOver = object.gameOver ?? false;
+    state.gameLevel = object.gameLevel ?? 1;
+    state.maxLevel = object.maxLevel ?? 1; 
+    state.positionedCharacters = object.positionedCharacters ?? [];
+
+    return state;
   }
 }
