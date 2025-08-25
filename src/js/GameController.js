@@ -26,6 +26,7 @@ export default class GameController {
     this.availableMoves = [];
     this.gameState = new GameState();
     this.aiController = new AiController(this);
+    this.lastPlayerCharacterIndex = null;
   }
 
   init() {
@@ -48,6 +49,11 @@ export default class GameController {
       if (turn === 'computer') {
         setTimeout(() => {
           this.aiController.makeMove();
+          if (this.lastPlayerCharacterIndex !== null) {
+            this.selectedCell = this.lastPlayerCharacterIndex;
+            this.gamePlay.selectCell(this.selectedCell); // подсвечиваем персонажа, которым делали ход последний раз
+            this.availableMoves = showPossibleMoves(this.selectedCell, this);
+          }
           this.gamePlay.setCursor(cursors.auto);
         }, 100);
       }
@@ -257,6 +263,7 @@ export default class GameController {
     if (positionedCharacter && this.isPlayerCharacter(positionedCharacter.character)) {
       this.gamePlay.selectCell(index);
       this.selectedCell = index;
+      this.lastPlayerCharacterIndex = index;
       this.gamePlay.setCursor(cursors.pointer);
       this.availableMoves = showPossibleMoves(index, this);
       return;
@@ -281,6 +288,7 @@ export default class GameController {
       else if (isCellMovable(this.selectedCell, index, selectedCharacter.type, boardSize)) {
         await moveCharacter(selectedPositionedCharacter, index, this);
         this.selectedCell = null;
+        this.lastPlayerCharacterIndex = index;
         this.gamePlay.setCursor(cursors.auto);
         // console.log(`player переместился`);
         return;
@@ -311,10 +319,13 @@ export default class GameController {
       const selectedCharacter = selectedPositionedCharacter.character;
       const boardSize = this.gamePlay.boardSize;
 
+      if (positionedCharacter && this.isPlayerCharacter(positionedCharacter.character)) {
+        this.gamePlay.setCursor(cursors.pointer);
+        return;
+      }
+
       if (this.availableMoves.includes(index)) {
-        if (positionedCharacter && this.isPlayerCharacter(positionedCharacter.character)) { // Если цель курсора - персонаж игрока
-          this.gamePlay.setCursor(cursors.pointer);
-        } else if (isCellMovable(this.selectedCell, index, selectedCharacter.type, boardSize) && !this.getPositionedCharacter(index)) { // Если можно переместиться
+        if (isCellMovable(this.selectedCell, index, selectedCharacter.type, boardSize) && !this.getPositionedCharacter(index)) { // Если можно переместиться
           this.gamePlay.selectCell(index, 'green');
           this.gamePlay.setCursor(cursors.pointer);
         } else if (positionedCharacter && !this.isPlayerCharacter(positionedCharacter.character) && isCellAttackable(this.selectedCell, index, selectedCharacter.type, boardSize)) { // Если можно атаковать
