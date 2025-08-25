@@ -1,7 +1,7 @@
 import GamePlay from "../GamePlay";
 import Bowman from "../characters/Bowman";
 
-test("", () => {
+test("тест на показ правильных характеристик персонажа", () => {
   const gameplay = new GamePlay();
   const character = new Bowman(1);
   const result = gameplay.showCharacterInfo(character);
