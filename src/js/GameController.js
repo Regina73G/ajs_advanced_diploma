@@ -26,16 +26,6 @@ export default class GameController {
     this.availableMoves = [];
     this.gameState = new GameState();
     this.aiController = new AiController(this);
-
-    // Подписываем AI на смену хода
-    this.gameState.onAfterTurn((turn) => {
-      if (turn === 'computer') {
-        setTimeout(() => {
-          this.aiController.makeMove();
-          this.gamePlay.setCursor(cursors.auto);
-        }, 100);
-      }
-    });
   }
 
   init() {
@@ -47,8 +37,21 @@ export default class GameController {
     this.gamePlay.addNewGameListener(() => this.startNewGame());
     this.gamePlay.addSaveGameListener(() => this.saveGame());
     this.gamePlay.addLoadGameListener(() => this.loadGame());
+    this.registerAfterTurnHandler();
 
     this.startNewGame();
+  }
+
+  registerAfterTurnHandler() {
+      // Подписываем AI на смену хода
+    this.gameState.onAfterTurn((turn) => {
+      if (turn === 'computer') {
+        setTimeout(() => {
+          this.aiController.makeMove();
+          this.gamePlay.setCursor(cursors.auto);
+        }, 100);
+      }
+    });
   }
 
   getPositionedCharacter(index) {
@@ -200,6 +203,7 @@ export default class GameController {
       this.restoreFromState(saved);
       this.setLevelTheme(this.gameState.gameLevel);
       this.gamePlay.redrawPositions(this.positionedCharacters);
+      this.registerAfterTurnHandler();
       GamePlay.showMessage('Игра загружена!');
       console.log('Загружено:', saved);
     } catch (e) {
