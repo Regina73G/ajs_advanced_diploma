@@ -96,11 +96,12 @@ export default class GameController {
     if ((players.length === 0) || (this.gameState.gameLevel === 4 && enemies.length === 0)) { // Если персонажей нет, то Game Over или если ур 4 и врагов нет
       this.gameState.setGameOver();
       this.blockBoard();
-      GamePlay.showMessage(`Game Over! Ваш счёт: ${this.gameState.score}, рекорд: ${this.gameState.maxScore}`);
       if(this.gameState.score === (this.characterCount * 4) * 100) {
         GamePlay.showMessage(`You won! Ваш счёт: ${this.gameState.score}, рекорд: ${this.gameState.maxScore}`);
         return;
       }
+      
+      GamePlay.showMessage(`Game Over! Ваш счёт: ${this.gameState.score}, рекорд: ${this.gameState.maxScore}`);
       return;
     }
 
